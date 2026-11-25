@@ -1,3 +1,5 @@
-export { useSimulation } from './model/useSimulation'
+export { useSimulation, ensureRoller } from './model/useSimulation'
 export { default as SimulationBar } from './ui/SimulationBar.vue'
-export { propagate } from './lib/propagate'
+export { runChainRound } from './lib/propagate'
+export { runResetPass } from './lib/resetRoller'
+export { runSimulation } from './lib/engine'

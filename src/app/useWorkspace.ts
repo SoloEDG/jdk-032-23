@@ -4,10 +4,11 @@ import { createDefaultDocument } from '@/shared/defaults'
 import { useLayout } from '@/features/layout'
 import { useMechanisms } from '@/features/mechanisms'
 import { useScene, clampToScene } from '@/features/scene'
-import { useSimulation } from '@/features/simulation'
+import { useSimulation, ensureRoller } from '@/features/simulation'
 import { useReview } from '@/features/replay'
+import { useReset } from '@/features/reset'
 
-const storageKey = 'chainline-jdk032-project-v1'
+const storageKey = 'chainline-jdk032-project-v2'
 
 function loadProject() {
   try {
@@ -22,7 +23,7 @@ function loadProject() {
 }
 
 export function useWorkspace() {
-  const document = shallowRef<DominoDocument>(loadProject())
+  const document = shallowRef<DominoDocument>(ensureRoller(loadProject()))
   const saveState = ref<'saved' | 'saving' | 'unsaved'>('saved')
   const focusPieceId = ref<string | null>(null)
   let saveTimer = 0
@@ -41,6 +42,7 @@ export function useWorkspace() {
   const scene = useScene(document, changed)
   const simulation = useSimulation(document)
   const review = useReview(simulation.run)
+  const reset = useReset(document, changed)
 
   watch(document, next => {
     saveState.value = 'saving'
@@ -93,5 +95,5 @@ export function useWorkspace() {
     window.clearTimeout(saveTimer)
   })
 
-  return { document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review, place, move, focusEvent }
+  return { document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review, reset, place, move, focusEvent }
 }

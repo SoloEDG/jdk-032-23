@@ -7,7 +7,8 @@
     "dev": "vite",
     "typecheck": "vue-tsc --noEmit",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test --import ./tests/loader/register.ts --experimental-strip-types tests/*.test.ts"
   },
   "dependencies": {
     "@fontsource/barlow": "^5.2.0",

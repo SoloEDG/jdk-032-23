@@ -1,14 +1,18 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import type { SimulationRun } from '@/shared/document'
-import { previousEvent } from '../lib/eventOrder'
+import { eventsForRound, previousEvent, rollerPositionAt, type RoundFilter } from '../lib/eventOrder'
 
 export function useReview(run: Ref<SimulationRun | null>) {
   const time = ref(0)
   const playing = ref(false)
+  const roundFilter = ref<RoundFilter>('all')
   let timer = 0
   const events = computed(() => run.value?.events ?? [])
   const currentEvent = computed(() => previousEvent(events.value, time.value))
   const focusPieceId = computed(() => currentEvent.value?.pieceId ?? null)
+  const visibleEvents = computed(() => eventsForRound(events.value, roundFilter.value))
+  const availableRounds = computed(() => [...new Set(events.value.map(event => event.round))].sort((a, b) => a - b))
+  const rollerPosition = computed(() => run.value ? rollerPositionAt(run.value.roller, time.value) : null)
 
   function stop() {
     playing.value = false
@@ -31,11 +35,15 @@ export function useReview(run: Ref<SimulationRun | null>) {
   }
   function toggle() { if (playing.value) pause(); else play() }
   function restart() { seek(0) }
+  function setRoundFilter(filter: RoundFilter) { roundFilter.value = filter }
   function focusEvent(eventId: string) {
     const event = events.value.find(item => item.id === eventId)
     if (event) seek(event.time)
   }
-  watch(run, () => { time.value = 0; stop() })
+  watch(run, () => { time.value = 0; roundFilter.value = 'all'; stop() })
   onBeforeUnmount(stop)
-  return { time, playing, events, currentEvent, focusPieceId, seek, play, pause, toggle, restart, focusEvent }
+  return {
+    time, playing, events, visibleEvents, availableRounds, roundFilter, currentEvent,
+    focusPieceId, rollerPosition, seek, play, pause, toggle, restart, focusEvent, setRoundFilter,
+  }
 }

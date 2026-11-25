@@ -6,10 +6,11 @@ import { MechanismPanel } from '@/features/mechanisms'
 import { ScenePanel } from '@/features/scene'
 import { SimulationBar } from '@/features/simulation'
 import { ReplayPanel } from '@/features/replay'
+import { ResetPanel } from '@/features/reset'
 import { useWorkspace } from './useWorkspace'
 
 const {
-  document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review, place, move, focusEvent,
+  document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review, reset, place, move, focusEvent,
 } = useWorkspace()
 const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : saveState.value === 'saving' ? '保存中' : '尚未保存')
 </script>
@@ -36,6 +37,12 @@ const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : sav
           @update:to-id="mechanisms.toId.value = $event" @add="mechanisms.add" @remove="mechanisms.remove" @toggle="mechanisms.toggle" />
         <div class="rail-divider"></div>
         <ScenePanel :scene="document.scene" @update="scene.update" />
+        <div class="rail-divider"></div>
+        <ResetPanel :roller="reset.roller.value" :branch-index="reset.branchIndex.value" :branch-draft="reset.branchDraft.value"
+          @toggle="reset.setEnabled" @start-delay="reset.setStartDelay" @speed="reset.setSpeed"
+          @contact-radius="reset.setContactRadius" @auto-fill="reset.autoFill" @select-branch="reset.selectBranch"
+          @apply-branch="reset.applyBranch" @clear-branch="reset.clearBranch"
+          @update:draft="reset.branchDraft.value = $event" />
       </aside>
 
       <section class="center-column">
@@ -44,7 +51,8 @@ const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : sav
           <div class="revision-chip"><Dot :size="19" />修订 {{ document.revision.toString().padStart(2, '0') }}</div>
         </div>
         <BuildCanvas :document="document" :active-tool="layout.activeTool.value" :selected-id="layout.selectedId.value"
-          :run="simulation.run.value" :focus-piece-id="focusPieceId" @place="place" @select="layout.select"
+          :run="simulation.run.value" :focus-piece-id="focusPieceId" :review-time="review.time.value"
+          :roller-position="review.rollerPosition.value" @place="place" @select="layout.select"
           @move="move" />
         <SimulationBar :run="simulation.run.value" :stale="simulation.stale.value" :busy="simulation.busy.value"
           :issue="simulation.issue.value" @run="simulation.simulate" @reset="simulation.clear" />
@@ -58,9 +66,11 @@ const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : sav
       <aside class="right-rail">
         <ObjectInspector :piece="layout.selected.value" @rotate="layout.rotate" @remove="layout.remove" @update="layout.update" />
         <div class="rail-divider"></div>
-        <ReplayPanel :run="simulation.run.value" :events="review.events.value" :time="review.time.value"
+        <ReplayPanel :run="simulation.run.value" :events="review.visibleEvents.value" :time="review.time.value"
           :playing="review.playing.value" :current-event="review.currentEvent.value" :stale="simulation.stale.value"
-          @toggle="review.toggle" @seek="review.seek" @restart="review.restart" @event="focusEvent" />
+          :rounds="review.availableRounds.value" :round-filter="review.roundFilter.value"
+          @toggle="review.toggle" @seek="review.seek" @restart="review.restart" @event="focusEvent"
+          @filter="review.setRoundFilter" />
       </aside>
     </main>
     <footer class="statusbar"><span><AudioWaveform :size="14" /> CHAINLINE FIELD NOTES</span><span>02.4 / MOTION STUDY</span><span>LOCAL PROJECT</span></footer>

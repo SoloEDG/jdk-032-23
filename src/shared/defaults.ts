@@ -33,5 +33,16 @@ export function createDefaultDocument(): DominoDocument {
     ],
     scene: { gravity: 9.8, friction: 0.62, width: 21, height: 9, showGrid: true },
     startPieceId: 'd1',
+    roller: {
+      enabled: true,
+      startDelay: 0.8,
+      speed: 2.4,
+      contactRadius: 0.85,
+      // 两条支路共用主干、在分岔后各自覆盖一条支线上的骨牌；滚轮循环在二者之间交替。
+      branches: [
+        ['d1', 'd2', 'd3', 'd4', 'd5', 'r1', 'd6', 's1', 'd7', 'd8'],
+        ['d1', 'd2', 'd3', 'd4', 'd5', 'r1', 'd6', 's1', 'd9', 'd10'],
+      ],
+    },
   }
 }

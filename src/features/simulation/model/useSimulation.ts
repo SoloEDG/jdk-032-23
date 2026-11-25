@@ -1,6 +1,18 @@
 import { computed, ref, shallowRef, type Ref } from 'vue'
 import type { DominoDocument, SimulationRun } from '@/shared/document'
-import { propagate } from '../lib/propagate'
+import { runSimulation } from '../lib/engine'
+
+/** 兼容旧版本存档：补齐复位滚轮配置。 */
+export function ensureRoller(document: DominoDocument): DominoDocument {
+  if (document.roller) return document
+  return {
+    ...document,
+    roller: {
+      enabled: true, startDelay: 0.8, speed: 2.4, contactRadius: 0.85,
+      branches: [[], []],
+    },
+  }
+}
 
 export function useSimulation(document: Ref<DominoDocument>) {
   const run = shallowRef<SimulationRun | null>(null)
@@ -14,8 +26,8 @@ export function useSimulation(document: Ref<DominoDocument>) {
     issue.value = ''
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
     try {
-      const snapshot = structuredClone(document.value)
-      const result = propagate(snapshot)
+      const snapshot = structuredClone(ensureRoller(document.value))
+      const result = runSimulation(snapshot)
       run.value = {
         id: crypto.randomUUID(),
         documentId: snapshot.id,
@@ -27,6 +39,8 @@ export function useSimulation(document: Ref<DominoDocument>) {
         interruptedPieceId: result.interruptedPieceId,
         interruptionReason: result.interruptionReason,
         duration: result.duration,
+        rounds: result.rounds,
+        roller: result.roller,
       }
       if (result.status === 'empty') issue.value = '场景里没有可运行的触发点。'
     } catch {

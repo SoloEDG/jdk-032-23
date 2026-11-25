@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Crosshair, MousePointer2 } from '@lucide/vue'
-import type { DominoDocument, Piece, PieceKind, SimulationRun } from '@/shared/document'
+import type { DominoDocument, Piece, PieceKind, SimulationRun, Vec2 } from '@/shared/document'
+import { dominoStateAt } from '@/features/replay'
 
 const props = defineProps<{
   document: DominoDocument; activeTool: PieceKind | null; selectedId: string | null
   run: SimulationRun | null; focusPieceId: string | null
+  reviewTime: number; rollerPosition: (Vec2 & { phase: 'outbound' | 'returning' }) | null
 }>()
 const emit = defineEmits<{
   place: [PieceKind, number, number]; select: [string | null]; move: [string, number, number]
 }>()
 const svg = ref<SVGSVGElement | null>(null)
 const view = { width: 1040, height: 510, margin: 35 }
-const fallen = computed(() => new Set(props.run?.events.filter(event => event.kind === 'fall').map(event => event.pieceId) ?? []))
 const failed = computed(() => props.run?.interruptedPieceId ?? null)
 let dragging: string | null = null
 
@@ -49,25 +50,45 @@ function boardClick(event: PointerEvent) {
 }
 function pxX(x: number) { return view.margin + x / props.document.scene.width * (view.width - view.margin * 2) }
 function pxY(y: number) { return view.margin + y / props.document.scene.height * (view.height - view.margin * 2) }
+
+function visualState(piece: Piece) {
+  if (!props.run) return 'standing'
+  return dominoStateAt(props.run.events, piece.id, props.reviewTime)
+}
 function pieceColor(piece: Piece) {
   if (piece.id === failed.value) return '#e88b69'
-  if (fallen.value.has(piece.id)) return '#89c5a5'
+  if (piece.kind === 'domino') {
+    const state = visualState(piece)
+    if (state === 'fallen') return '#89c5a5'
+    if (state === 'reset') return '#9fc6d8'
+    return '#ead8b5'
+  }
   if (piece.kind === 'ramp') return '#8ca6a0'
   if (piece.kind === 'splitter') return '#e6bd68'
   if (piece.kind === 'trigger') return '#df8d70'
   return '#ead8b5'
 }
 function eventTime(pieceId: string) {
-  const event = props.run?.events.find(item => item.pieceId === pieceId)
+  const event = props.run?.events
+    .filter(item => item.pieceId === pieceId && (item.kind === 'fall' || item.kind === 'reset'))
+    .at(-1)
   return event ? event.time.toFixed(2) : ''
 }
+const rollerRoute = computed(() => {
+  const route = props.run?.roller.route ?? []
+  if (route.length < 2) return ''
+  return route.map((point, index) => `${index === 0 ? 'M' : 'L'} ${pxX(point.x)} ${pxY(point.y)}`).join(' ')
+})
+const rollerSpokeAngle = computed(() => (props.reviewTime * 220) % 360)
 </script>
 
 <template>
   <section class="stage-panel" aria-label="骨牌构筑场景">
     <div class="stage-toolbar">
       <div class="stage-mode"><MousePointer2 :size="15" /><span>{{ activeTool ? '点击空位添加元件' : '编辑场景' }}</span></div>
-      <div class="stage-readout"><span class="readout-dot"></span>{{ document.pieces.length }} 件元件 <span class="readout-sep">·</span> {{ document.scene.width }} × {{ document.scene.height }} 桌面</div>
+      <div class="stage-readout"><span class="readout-dot"></span>{{ document.pieces.length }} 件元件 <span class="readout-sep">·</span> {{ document.scene.width }} × {{ document.scene.height }} 桌面
+        <template v-if="run?.roller.attempted"><span class="readout-sep">·</span><span class="readout-roller">复位滚轮 {{ run.roller.cycles }} 循环</span></template>
+      </div>
     </div>
     <svg ref="svg" class="stage-svg" :viewBox="`0 0 ${view.width} ${view.height}`" role="img"
       aria-label="可编辑的多米诺场景。使用鼠标拖动或方向键微调选中元件。" @pointerup="up" @pointercancel="up"
@@ -94,22 +115,37 @@ function eventTime(pieceId: string) {
         <circle :cx="pxX(document.pieces.find(piece => piece.id === connection.from)?.x ?? 0)" :cy="pxY(document.pieces.find(piece => piece.id === connection.from)?.y ?? 0)" r="3" />
       </g>
 
+      <path v-if="rollerRoute" :d="rollerRoute" class="roller-route" pointer-events="none" />
+
       <g v-for="piece in document.pieces" :key="piece.id" class="scene-piece"
-        :class="{ selected: selectedId === piece.id, focused: focusPieceId === piece.id, fallen: fallen.has(piece.id) }"
+        :class="{ selected: selectedId === piece.id, focused: focusPieceId === piece.id, fallen: piece.kind === 'domino' && visualState(piece) === 'fallen', reset: piece.kind === 'domino' && visualState(piece) === 'reset' }"
         :transform="`translate(${pxX(piece.x)} ${pxY(piece.y)}) rotate(${piece.angle})`"
         :tabindex="0" role="button" :aria-label="`${piece.label}，${piece.x.toFixed(1)}，${piece.y.toFixed(1)}`" :aria-pressed="selectedId === piece.id"
-        @pointerdown="down($event, piece)" @keydown.enter.stop="emit('select', piece.id)" @keydown.space.stop.prevent="emit('select', piece.id)">
+        @pointerdown="down($event, piece)" @keydown.enter.stop.prevent="emit('select', piece.id)" @keydown.space.stop.prevent="emit('select', piece.id)">
         <ellipse v-if="piece.kind === 'domino'" cx="0" cy="7" rx="15" ry="8" class="piece-ground-shadow" />
         <rect v-if="piece.kind === 'domino'" x="-9" y="-20" width="18" height="39" rx="4" :fill="pieceColor(piece)" class="domino-body" filter="url(#piece-shadow)" />
         <path v-else-if="piece.kind === 'ramp'" d="M-24 10 L22 10 L22 -10 Z" :fill="pieceColor(piece)" class="ramp-body" filter="url(#piece-shadow)" />
         <path v-else-if="piece.kind === 'splitter'" d="M0-13 L13 0 L0 13 L-13 0 Z" :fill="pieceColor(piece)" class="splitter-body" filter="url(#piece-shadow)" />
         <circle v-else r="11" :fill="pieceColor(piece)" class="trigger-body" filter="url(#piece-shadow)" />
         <line v-if="piece.kind === 'domino'" x1="0" y1="-15" x2="0" y2="14" class="domino-mark" />
+        <!-- 复位面：骨牌背面的凹口标记，只有滚轮接触这一面才执行复位 -->
+        <rect v-if="piece.kind === 'domino'" x="-11" y="-6" width="3" height="11" rx="1.2" class="reset-face" />
         <circle v-if="piece.id === document.startPieceId" cy="-28" r="4" class="start-marker" />
         <circle v-if="piece.id === failed" cy="-34" r="7" class="failure-marker" />
         <text y="32" text-anchor="middle" class="piece-label">{{ piece.label }}</text>
         <text v-if="eventTime(piece.id)" y="44" text-anchor="middle" class="piece-time">{{ eventTime(piece.id) }}s</text>
         <rect v-if="selectedId === piece.id || focusPieceId === piece.id" x="-18" y="-28" width="36" height="55" rx="8" class="selection-ring" />
+      </g>
+
+      <g v-if="rollerPosition" class="roller-marker" :class="rollerPosition.phase" pointer-events="none"
+        :transform="`translate(${pxX(rollerPosition.x)} ${pxY(rollerPosition.y)})`">
+        <circle r="17" class="roller-halo" />
+        <g :transform="`rotate(${rollerSpokeAngle})`">
+          <circle r="12" class="roller-wheel" />
+          <line x1="-9" y1="0" x2="9" y2="0" class="roller-spoke" />
+          <line x1="0" y1="-9" x2="0" y2="9" class="roller-spoke" />
+        </g>
+        <text y="27" text-anchor="middle" class="roller-tag">{{ rollerPosition.phase === 'outbound' ? '去程' : '回程' }}</text>
       </g>
 
       <g v-if="focusPieceId" class="focus-reticle" pointer-events="none">

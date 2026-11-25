@@ -244,6 +244,75 @@ kbd { padding: 2px 5px; border: 1px solid #536357; border-radius: 3px; backgroun
 .empty-orbit i:nth-child(3) { transform: rotate(90deg); border-color: #3d5447; }
 .empty-orbit span { position: absolute; top: 28px; left: 43px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px #e6bd68aa; }
 
+/* ---------- 复位滚轮配置面板 ---------- */
+.reset-panel { padding: 15px 0; }
+.reset-switch { display: flex; align-items: center; gap: 8px; margin: 10px 0 12px; color: var(--ink); font-size: 11px; cursor: pointer; }
+.reset-switch input { position: absolute; opacity: 0; }
+.reset-switch span { display: flex; align-items: center; gap: 7px; }
+.reset-switch span svg { color: var(--gold); }
+.reset-switch input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 3px; }
+.reset-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.reset-fields.disabled { opacity: .45; pointer-events: none; }
+.reset-fields label { display: grid; gap: 4px; color: var(--quiet); font-size: 9px; }
+.reset-fields input { width: 100%; height: 30px; padding: 0 6px; border: 1px solid #3a4b42; border-radius: 3px; background: var(--field); color: var(--ink); font: 10px var(--mono); }
+.branch-tabs { display: flex; gap: 5px; margin: 13px 0 8px; }
+.branch-tabs button { flex: 1; min-height: 30px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: var(--muted); font-size: 10px; }
+.branch-tabs button.chosen { border-color: var(--gold); color: var(--gold); background: #33301f; }
+.branch-tabs .branch-auto { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; padding: 0 8px; color: var(--cream); }
+.branch-editor { width: 100%; resize: vertical; padding: 8px; border: 1px solid #3a4b42; border-radius: 4px; background: var(--field); color: var(--ink); font: 9px var(--mono); line-height: 1.5; }
+.branch-actions { display: flex; gap: 7px; margin-top: 8px; }
+.branch-actions button { flex: 1; min-height: 31px; border-radius: 4px; font-size: 10px; }
+.branch-apply { border: 1px solid #596853; background: #37443b; color: var(--cream); }
+.branch-clear { border: 1px solid var(--rule); background: transparent; color: var(--muted); }
+.reset-hint { margin-top: 9px; color: var(--quiet); font-size: 9px; line-height: 1.55; }
+
+/* ---------- 模拟栏滚轮摘要 ---------- */
+.simulation-roller { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid #465545; border-radius: 5px; background: #26372f; }
+.simulation-roller svg { color: var(--mint); }
+.simulation-roller strong { display: block; font-size: 10px; }
+.simulation-roller small { display: block; margin-top: 2px; color: var(--quiet); font: 9px var(--mono); }
+.simulation-roller.stuck-ramp, .simulation-roller.mechanism-closed { border-color: #6b5245; background: #352f28; }
+.simulation-roller.stuck-ramp svg, .simulation-roller.mechanism-closed svg { color: var(--terracotta); }
+.readout-roller { color: var(--gold); }
+
+/* ---------- 回放：轮次筛选与滚轮卡片 ---------- */
+.round-filter { display: flex; gap: 5px; margin: 12px 0 4px; }
+.round-filter button { flex: 1; min-height: 28px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: var(--muted); font-size: 9px; }
+.round-filter button.chosen { border-color: var(--gold); color: var(--gold); background: #33301f; }
+.roller-card { margin: 12px 0 4px; padding: 10px; border: 1px solid #465545; border-radius: 5px; background: #26372f; }
+.roller-card.stuck-ramp, .roller-card.mechanism-closed { border-color: #6b5245; background: #352f28; }
+.roller-card-head { display: flex; align-items: center; gap: 7px; color: var(--mint); font-size: 11px; }
+.roller-card.stuck-ramp .roller-card-head, .roller-card.mechanism-closed .roller-card-head { color: var(--terracotta); }
+.roller-chip { margin-left: auto; color: var(--quiet); font: 8px var(--mono); }
+.roller-stop { margin-top: 7px; color: #f0c7a5; font-size: 9px; line-height: 1.5; }
+.roller-lists { display: grid; gap: 4px; margin-top: 8px; }
+.roller-lists p { color: var(--muted); font-size: 9px; line-height: 1.45; }
+.roller-lists em { color: var(--cream); font-style: normal; font-family: var(--mono); font-size: 9px; }
+.roller-dot { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; }
+.roller-dot.reset { background: var(--mint); }
+.roller-dot.pending { background: var(--terracotta); }
+.roller-dot.pass { background: var(--gold); }
+.event-row { grid-template-columns: 37px 21px minmax(0,1fr) auto auto; }
+.event-row.reset { border-left-color: #7fb6d2; }
+.event-row.roller { border-left-color: var(--gold); }
+.event-row.reset .event-icon { color: #7fb6d2; }
+.event-row.roller .event-icon { color: var(--gold); }
+.event-round { padding: 2px 5px; border-radius: 3px; font: 8px var(--mono); }
+.round-badge-1 { background: #334039; color: var(--mint); }
+.round-badge-2 { background: #3d3526; color: var(--gold); }
+
+/* ---------- 画布：复位面、滚轮路径与滚轮 ---------- */
+.scene-piece.reset .domino-body { stroke: #b7d6e6; stroke-width: 1.4; }
+.reset-face { fill: #6f93a8; opacity: .85; pointer-events: none; }
+.roller-route { fill: none; stroke: var(--gold); stroke-width: 1.4; stroke-dasharray: 5 5; opacity: .55; pointer-events: none; }
+.roller-marker .roller-halo { fill: #e6bd6822; stroke: var(--gold); stroke-width: 1; opacity: .8; }
+.roller-marker.returning .roller-halo { stroke: #b7d6e6; }
+.roller-wheel { fill: #2c3d35; stroke: var(--gold); stroke-width: 2; }
+.roller-marker.returning .roller-wheel { stroke: #b7d6e6; }
+.roller-spoke { stroke: var(--gold); stroke-width: 1.6; }
+.roller-marker.returning .roller-spoke { stroke: #b7d6e6; }
+.roller-tag { fill: var(--gold); font: 8px var(--mono); }
+
 .statusbar { height: 29px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 25px; border-top: 1px solid var(--rule-soft); color: #728077; font: 8px var(--mono); letter-spacing: .09em; }
 .statusbar span:first-child { display: flex; align-items: center; gap: 7px; color: #aab4a8; }
 .statusbar svg { color: var(--gold); }
